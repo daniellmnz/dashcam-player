@@ -1,6 +1,6 @@
 # Dashcam Player
 
-**Version 1.59.1 · 16 October 2026**
+**Version 1.60.0 · 16 October 2026**
 
 Plays 7X Dashcam recordings, splits the combined frame back into its separate
 camera views, and generates the ffmpeg commands to export them.
@@ -717,10 +717,22 @@ folder on your PATH yourself.
 ## If something does not play
 
 **Nothing plays, and the panel says your browser has no H.265 support.** Check
-`edge://gpu`. If Video Decode reads "Software only", hardware acceleration is
-off — turn it on in `edge://settings/system` and restart Edge completely.
-Chromium has no software H.265 decoder at all, so with acceleration off these
-recordings cannot play whatever else is installed.
+`edge://gpu` — or `chrome://gpu` — and look under *Video Acceleration
+Information* for a line reading **Decode hevc main**. If it is absent, or Video
+Decode reads "Software only", graphics acceleration is off: turn on **Use
+graphics acceleration when available** in `edge://settings/system` (or
+`chrome://settings/system`) and restart the browser completely. Chromium has no
+software H.265 decoder at all, so with acceleration off these recordings cannot
+play whatever else is installed — which is also why the browser reports no
+H.265 support rather than merely failing to play a file.
+
+Paste those addresses into the address bar rather than expecting a link to
+them: a web page is not allowed to open a browser's settings page.
+
+On Edge there is a second requirement — the **HEVC Video Extensions** from the
+Microsoft Store. Chrome decodes HEVC without it. Firefox does not decode HEVC
+on Windows at all. There are fuller instructions for both browsers at
+<https://github.com/StaZhu/enable-chromium-hevc-hardware-decoding>.
 
 **It plays but stutters.** Very tall frames exceed what GPU decoders accept
 (usually 4096 pixels), forcing software decoding. Splitting the recording into

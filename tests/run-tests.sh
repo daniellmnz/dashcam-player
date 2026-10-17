@@ -33,7 +33,7 @@ export DCP_CHROMIUM
 fail=0
 node -e "const fs=require('fs');const m=fs.readFileSync('$P/dashcam-player.html','utf8').match(/<script\b[^>]*>([\s\S]*?)<\/script>/);fs.writeFileSync('$SP/full.js',m[1]);"
 node --check "$SP/full.js" >/dev/null 2>&1 && echo "[ok]   page script syntax" || { echo "[FAIL] page script syntax"; fail=1; }
-for t in xss2 panel del del2 sidecar robust csp defaults reset tooltips stale groupdel alertpoint alertfolder clip marks scan scandirs sessionname splitsecs duration splitclock length rectify flat adjust marker locate wholesize delghost alertlabel pathline; do
+for t in xss2 hevcmsg panel del del2 sidecar robust csp defaults reset tooltips stale groupdel alertpoint alertfolder clip marks scan scandirs sessionname splitsecs duration splitclock length rectify flat adjust marker locate wholesize delghost alertlabel pathline; do
   if node "$SP/t2/$t.js" >/dev/null 2>&1; then echo "[ok]   $t"; else echo "[FAIL] $t"; [ "$t" = csp ] && echo "       (run: python3 tools/repin-csp.py)"; fail=1; fi
 done
 # The MP4 parser, against real recordings. They are far too large to keep in

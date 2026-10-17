@@ -36,7 +36,7 @@
      the script, so serving the page does not alter the bytes covered. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src 'sha256-zcQrDD9ZQmSut9uDIYZYV/jSfGgzpQCljDjV0qdyZts=';
+  script-src 'sha256-PijbbgefnCF/AtSMISeBdw/+MML9/lzqCi5b0e9unW0=';
   style-src 'unsafe-inline';
   img-src 'self' data: blob:;
   media-src 'self' blob:;
@@ -278,6 +278,10 @@ body.dragging .stage{outline:2px solid var(--focus);outline-offset:-8px;}
 .msg p{margin:0 0 10px;}
 .msg button{background:var(--accent);color:var(--accent-ink);border:0;border-radius:4px;padding:8px 14px;font-size:14px;font-weight:500;}
 .msg code{font-family:var(--mono);font-size:12.5px;color:#cfe0ee;overflow-wrap:anywhere;}
+/* Links in a message panel. Without this they take the browser's own blue,
+   which on this background is barely legible. */
+.msg a{color:var(--accent);text-decoration:underline;}
+.msg a:hover{text-decoration-thickness:2px;}
 .msg code.block{display:block;background:#0a0d10;border:1px solid var(--stage-line);
   border-radius:4px;padding:9px;font-size:12px;white-space:pre-wrap;margin:6px 0;}
 
@@ -486,7 +490,7 @@ code.cmd{display:block;background:var(--sunken);border:1px solid var(--line-soft
   <aside class="rail">
     <div class="brand">
       <h1>Zeekr 7X Sentry &amp; Dashcam Player</h1>
-      <p class="ver">v1.59.1</p>
+      <p class="ver">v1.60.0</p>
     </div>
     <div class="pickers">
       <button class="btn btn-primary" id="reopen" hidden title="Open the folder you were last using again"></button>
@@ -962,7 +966,7 @@ const DCP_TOKEN=(function(){
 // the code it started with, while this file is re-read from disk every time.
 // A mismatch is not cosmetic - an older helper silently drops parameters this
 // page sends, and the failure surfaces as if a recording were missing.
-const DCP_VERSION="1.59.1";
+const DCP_VERSION="1.60.0";
 // Three states, not two. The placeholder surviving does NOT mean "no helper":
 // a helper older than this handshake does not know the placeholder either, so
 // it serves the page with it untouched. Reading that as "no helper" made this
@@ -3147,8 +3151,33 @@ function loadFailed(reason){
   const name=s?s.name:"this file";
   const lines=[`<h2>This file did not load</h2>`,`<p>${reason}</p>`];
   if(!sup.h265){
-    lines.push(`<p>Your browser reports no H.265 / HEVC support. If these recordings are HEVC, that is almost certainly why. Chrome or Edge on Windows can usually decode HEVC using the GPU; Firefox often cannot.</p>`);
-    lines.push(`<p>Often the file is fine and only its declared level is wrong, which browsers reject. Re-tagging is a stream copy, about a second per file:</p>`);
+    lines.push(`<p>Your browser reports no H.265 / HEVC support, which is almost certainly why this did not play.</p>`);
+    // Graphics acceleration first, because it is the commonest cause and the
+    // only free fix. HEVC is decoded by the graphics card rather than by the
+    // browser, and the browser's own support check takes that setting into
+    // account - so with acceleration switched off it reports no HEVC at all,
+    // which is exactly what has just been read above. Converting the files is
+    // the last resort, not the first.
+    lines.push(`<p><b>Check graphics acceleration first.</b> HEVC is decoded by the`
+      +` graphics card, not by the browser, so switching acceleration off takes`
+      +` HEVC with it. Open the setting by pasting one of these into the address`
+      +` bar — a page is not allowed to open a browser settings page for you:</p>`);
+    lines.push(`<code class="block">edge://settings/system\nchrome://settings/system</code>`);
+    lines.push(`<p>Turn on <b>Use graphics acceleration when available</b>, restart`
+      +` the browser, and open this recording again.</p>`);
+    lines.push(`<p>To see whether it took, paste <code>edge://gpu</code> or`
+      +` <code>chrome://gpu</code> and look under <b>Video Acceleration`
+      +` Information</b> for a line reading <b>Decode hevc main</b>. If it is not`
+      +` there, the graphics card or its driver cannot decode HEVC.</p>`);
+    lines.push(`<p>On Edge there is a second requirement: the <b>HEVC Video`
+      +` Extensions</b> from the Microsoft Store. Chrome does not need it.`
+      +` Firefox does not decode HEVC on Windows at all.`
+      +` <a href="https://github.com/StaZhu/enable-chromium-hevc-hardware-decoding"`
+      +` target="_blank" rel="noopener noreferrer">Fuller instructions for both`
+      +` browsers</a>.</p>`);
+    lines.push(`<p>If acceleration is already on, the file itself may be fine and`
+      +` only its declared level wrong, which browsers reject. Re-tagging is a`
+      +` stream copy, about a second per file:</p>`);
     lines.push(`<code class="block">mkdir fixed\nfor %F in (*.mp4) do ffmpeg -hide_banner -y -i "%F" -c copy -bsf:v hevc_metadata=level=153 "fixed\\%~nxF"</code>`);
     lines.push(`<p>If that does not help, converting to H.264 always will:</p>`);
     lines.push(`<code class="block">mkdir h264\nfor %F in (*.mp4) do ffmpeg -hide_banner -y -i "%F" -c:v h264_nvenc -preset p5 -cq 23 -an "h264\\%~nxF"</code>`);

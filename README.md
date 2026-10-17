@@ -1,17 +1,13 @@
 # Dashcam Player
 
-A Windows 11 player for Zeekr 7X dashcam and sentry recordings. 
-
-Uses the four camera recordings Dashcam video (Front, rear, right, left) from Zeekr-Shortcut-Car or Open AVM recorder. 
-(https://github.com/dts88/zeekr-shortcut-car  or  https://github.com/Dantenothing/openavm-recorder
-
-The car writes all four cameras into a single frame; this splits them back apart, straightens the
+A player for Zeekr 7X dashcam and sentry recordings. The car writes all four
+cameras into a single frame; this splits them back apart, straightens the
 fisheye, and exports any one camera as its own file.
 
 Everything runs on your own machine. Nothing is uploaded, and the player has
 no network access beyond the local helper that serves it.
 
-![version](https://img.shields.io/badge/version-1.59.1-blue)
+![version](https://img.shields.io/badge/version-1.60.0-blue)
 
 ## What it does
 
