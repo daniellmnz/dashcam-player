@@ -1,0 +1,12 @@
+{
+  "name": "dashcam-player-tests",
+  "private": true,
+  "description": "Regression suite for Dashcam Player. Run ./run-tests.sh.",
+  "scripts": {
+    "test": "./run-tests.sh"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "playwright-core": "^1.64.0"
+  }
+}

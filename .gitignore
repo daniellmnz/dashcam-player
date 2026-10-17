@@ -1,0 +1,26 @@
+# Build output. The installer is a release asset, not a source file.
+*.msi
+
+# Test dependencies. "npm install --prefix tests" fetches them.
+node_modules
+node_modules/
+
+# Written by the suite as it runs: the extracted page script, the browser
+# screenshots the layout checks take, and the throwaway helper they start.
+tests/full.js
+tests/idlerun/
+*.png
+*.mp4
+!src/*.png
+
+# Python bytecode from the build helpers in tools/
+__pycache__/
+*.pyc
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The version lives in exactly one place. It used to appear in four, and
+     the Upgrade table's Maximum had to be bumped in step with Version by
+     hand: bump one and not the other and the installer silently stops
+     detecting its own predecessor, leaving two copies installed. -->
+<?define Ver = "1.59.1" ?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <!-- The ProductCode MUST change with every version, or Windows sees the
+       same product already installed and refuses outright with "Another
+       version of this product is already installed" - RemoveExistingProducts
+       never gets a chance to run. The UpgradeCode below stays fixed; that is
+       what ties the releases together as one product.
+
+       This project derives it deterministically, so rebuilding a version
+       reproduces its code. Every release from 1.10.0 onwards follows it:
+
+         python3 -c "import uuid; print(uuid.uuid5(
+           uuid.UUID('{1BECB43F-BFF1-5373-850A-AE207AA893FE}'),
+           'Product-1.59.1'))"
+
+       Bump Ver above and this GUID together. -->
+  <Product Id="{425A5326-1489-5918-A3F7-CC37EE8AFC34}"
+           Name="Dashcam Player"
+           Language="1033"
+           Version="$(var.Ver)"
+           Manufacturer="Dashcam Player"
+           UpgradeCode="{1BECB43F-BFF1-5373-850A-AE207AA893FE}">
+
+    <Package InstallerVersion="200" Compressed="yes"
+             InstallScope="perUser"
+             Description="Dashcam Player $(var.Ver)"
+             Comments="Plays and splits 7X Dashcam recordings"/>
+
+    <Media Id="1" Cabinet="app.cab" EmbedCab="yes"/>
+
+    <Property Id="ALLUSERS" Secure="yes"/>
+    <Property Id="MSIINSTALLPERUSER" Value="1"/>
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico"/>
+    <Property Id="ARPNOMODIFY" Value="1"/>
+    <Icon Id="AppIcon.ico" SourceFile="../src/DashcamPlayer.ico"/>
+
+    <Upgrade Id="{1BECB43F-BFF1-5373-850A-AE207AA893FE}">
+      <UpgradeVersion Minimum="0.0.0" IncludeMinimum="yes"
+                      Maximum="$(var.Ver)" IncludeMaximum="yes"
+                      Property="OLDVERSIONFOUND" OnlyDetect="no"/>
+      <!-- Detect a NEWER one, and only detect it: without this row, installing
+           an older build over a newer one does not replace it, it installs
+           alongside. The component GUIDs are identical between versions, so
+           every component's reference count goes to two and uninstalling
+           either one leaves all the files behind. -->
+      <UpgradeVersion Minimum="$(var.Ver)" IncludeMinimum="no"
+                      Property="NEWERVERSIONDETECTED" OnlyDetect="yes"/>
+    </Upgrade>
+
+    <Condition Message="A newer version of Dashcam Player is already installed. Uninstall it first if you want to go back to this version.">
+      NOT NEWERVERSIONDETECTED OR Installed
+    </Condition>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="ProgramsFolder" Name="Programs">
+          <Directory Id="INSTALLDIR" Name="DashcamPlayer"/>
+        </Directory>
+        <!-- The working folder. It was not in the Directory table at all, so
+             uninstall left lastfolder.txt, server.pid and the split status
+             files behind. Remove-DashcamPlayerData.cmd would have cleared
+             them, but uninstall deletes that script first. -->
+        <Directory Id="DATADIR" Name="DashcamPlayer"/>
+      </Directory>
+      <Directory Id="DesktopFolder" Name="Desktop"/>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="AppMenuFolder" Name="Dashcam Player"/>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLDIR">
+        <Component Id="C_HtmlFile" Guid="{17B1A9D8-807A-56C4-A646-E6BF74DAD8CC}">
+          <File Id="F_HtmlFile" Name="dashcam-player.html" Source="../src/dashcam-player.html" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_ServerPs1" Guid="{63669800-935D-5720-BC2F-FAA1A8470482}">
+          <File Id="F_ServerPs1" Name="dashcam-server.ps1" Source="../src/dashcam-server.ps1" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_LauncherCmd" Guid="{2DFDF14F-0560-50D4-A881-A8AB07FBF50E}">
+          <File Id="F_LauncherCmd" Name="DashcamPlayer.ps1" Source="../src/DashcamPlayer.ps1" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_FindBrowser" Guid="{8CF1E19A-4649-52B0-AD32-7F422AE4B4B3}">
+          <File Id="F_FindBrowser" Name="find-browser.cmd" Source="../src/find-browser.cmd" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_InstallApp" Guid="{5E1258D5-B65F-5777-A2F7-87A4A8DB4EC7}">
+          <File Id="F_InstallApp" Name="InstallAsEdgeApp.cmd" Source="../src/InstallAsEdgeApp.cmd" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_RemoveData" Guid="{3DDE0B8E-59D6-5082-9284-D3C4EE37C176}">
+          <File Id="F_RemoveData" Name="Remove-DashcamPlayerData.cmd" Source="../src/Remove-DashcamPlayerData.cmd" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_SplitBat" Guid="{1CF7178B-AAFF-5BF4-BA2A-6BAD0F0610CA}">
+          <File Id="F_SplitBat" Name="split-views.bat" Source="../src/split-views.bat" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_RectifyBat" Guid="{7CB17F6C-F7CE-5D83-9AA2-65969AA2E9BE}">
+          <File Id="F_RectifyBat" Name="rectify-fisheye.bat" Source="../src/rectify-fisheye.bat" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_DocsMd" Guid="{AAF44813-E472-5EAA-BCB3-CA1A346FD0AF}">
+          <File Id="F_DocsMd" Name="DashcamPlayer.md" Source="../src/DashcamPlayer.md" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_RunTool" Guid="{19592557-C57A-59AF-B458-6870A45E3656}">
+          <File Id="F_RunTool" Name="Run-Tool.ps1" Source="../src/Run-Tool.ps1" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_ShowProgress" Guid="{219BBE86-A762-520E-87F3-9C1417257776}">
+          <File Id="F_ShowProgress" Name="Show-Progress.ps1" Source="../src/Show-Progress.ps1" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_InstallFfmpeg" Guid="{8A0BC309-E696-52F3-9CFE-930686CF21BF}">
+          <File Id="F_InstallFfmpeg" Name="Install-FFmpeg.ps1" Source="../src/Install-FFmpeg.ps1" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_FixShortcuts" Guid="{18CF53DA-D29C-58C9-868F-406EC5D62CFB}">
+          <File Id="F_FixShortcuts" Name="Fix-Shortcuts.ps1" Source="../src/Fix-Shortcuts.ps1" KeyPath="yes"/>
+        </Component>
+        <Component Id="C_IconFile" Guid="{AC025447-9BC8-5707-9E06-5DEB0D93BE9E}">
+          <File Id="F_IconFile" Name="DashcamPlayer.ico" Source="../src/DashcamPlayer.ico" KeyPath="yes"/>
+        </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="AppMenuFolder">
+      <Component Id="C_Shortcuts" Guid="{A76F3E88-076F-5BEE-8A44-3AD2897FD4FB}">
+        <RemoveFolder Id="R_AppMenuFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\DashcamPlayer"
+                       Name="shortcuts" Type="integer" Value="1" KeyPath="yes"/>
+
+        <Shortcut Id="S_Player" Name="Dashcam Player"
+                  Description="Play and split 7X Dashcam recordings"
+                  Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]DashcamPlayer.ps1&quot;"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+
+        <Shortcut Id="S_SplitViews" Name="Single view into separate file"
+                  Description="Write one camera of a recording out as its own file"
+                  Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Run-Tool.ps1&quot; -Tool split"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+
+        <Shortcut Id="S_Rectify" Name="Rectify fisheye view"
+                  Description="Straighten one camera view, for a file or a folder"
+                  Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Run-Tool.ps1&quot; -Tool rectify"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+
+        <Shortcut Id="S_InstallApp" Name="Install as Edge app"
+                  Description="Run once so Edge remembers your recording folder"
+                  Target="[INSTALLDIR]InstallAsEdgeApp.cmd"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+        <Shortcut Id="S_FixIcons" Name="Fix shortcut icons"
+                  Description="Point every Dashcam Player shortcut at the installed icon"
+                  Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Fix-Shortcuts.ps1&quot;"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+
+        <Shortcut Id="S_OpenFolder" Name="Open install folder"
+                  Description="Where the player and the two ffmpeg scripts live"
+                  Target="[INSTALLDIR]"
+                  WorkingDirectory="INSTALLDIR"/>
+
+        <Shortcut Id="S_Docs" Name="Documentation"
+                  Description="How to use Dashcam Player"
+                  Target="[INSTALLDIR]DashcamPlayer.md"
+                  WorkingDirectory="INSTALLDIR"/>
+
+        <Shortcut Id="S_RemoveData" Name="Remove data"
+                  Description="Clear the sign-in entry and list what to clear in the browser"
+                  Target="[INSTALLDIR]Remove-DashcamPlayerData.cmd"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="INSTALLDIR">
+      <Component Id="C_Registry" Guid="{6B86CB06-A607-5ED7-B44B-B8D08B034492}">
+        <RegistryValue Root="HKCU" Key="Software\DashcamPlayer"
+                       Name="InstallDir" Type="string" Value="[INSTALLDIR]" KeyPath="yes"/>
+        <RegistryValue Root="HKCU" Key="Software\DashcamPlayer"
+                       Name="Version" Type="string" Value="$(var.Ver)"/>
+        <RemoveFolder Id="R_InstallDir" On="uninstall"/>
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DATADIR">
+      <Component Id="C_DataFolder" Guid="{BCD23B8E-570E-5F2F-80DD-89F87576733D}">
+        <!-- Nothing here is installed: the component exists only so the
+             files the app writes at runtime are removed on uninstall. The
+             registry value is the KeyPath because a component needs one and
+             none of these files exist at install time. -->
+        <RegistryValue Root="HKCU" Key="Software\DashcamPlayer"
+                       Name="datafolder" Type="integer" Value="1" KeyPath="yes"/>
+        <RemoveFile Id="R_LastFolder"    Name="lastfolder.txt"      On="uninstall"/>
+        <RemoveFile Id="R_ServerPid"     Name="server.pid"          On="uninstall"/>
+        <RemoveFile Id="R_SplitStatus"   Name="split-status.json"   On="uninstall"/>
+        <RemoveFile Id="R_SplitProgress" Name="split-progress.txt"  On="uninstall"/>
+        <RemoveFile Id="R_FfmpegState"   Name="ffmpeg-install.json" On="uninstall"/>
+        <RemoveFile Id="R_FfmpegLog"     Name="ffmpeg-install.log"  On="uninstall"/>
+        <RemoveFolder Id="R_DataDir" On="uninstall"/>
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="C_DesktopShortcut" Guid="{5C2142CF-6D8E-5247-B2EF-A9DB21088938}">
+        <RegistryValue Root="HKCU" Key="Software\DashcamPlayer"
+                       Name="desktop" Type="integer" Value="1" KeyPath="yes"/>
+        <Shortcut Id="S_DesktopTools" Name="Dashcam Player tools"
+                  Description="All Dashcam Player shortcuts in one place"
+                  Target="[AppMenuFolder]"
+                  WorkingDirectory="AppMenuFolder"/>
+
+        <Shortcut Id="S_Desktop" Name="Dashcam Player"
+                  Description="Play and split 7X Dashcam recordings"
+                  Target="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe"
+                  Arguments="-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]DashcamPlayer.ps1&quot;"
+                  WorkingDirectory="INSTALLDIR"
+                  Icon="AppIcon.ico"/>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Complete" Title="Dashcam Player" Level="1">
+      <ComponentRef Id="C_HtmlFile"/>
+      <ComponentRef Id="C_ServerPs1"/>
+      <ComponentRef Id="C_LauncherCmd"/>
+      <ComponentRef Id="C_FindBrowser"/>
+      <ComponentRef Id="C_InstallApp"/>
+      <ComponentRef Id="C_RemoveData"/>
+      <ComponentRef Id="C_SplitBat"/>
+      <ComponentRef Id="C_RectifyBat"/>
+      <ComponentRef Id="C_DocsMd"/>
+      <ComponentRef Id="C_RunTool"/>
+      <ComponentRef Id="C_ShowProgress"/>
+      <ComponentRef Id="C_InstallFfmpeg"/>
+      <ComponentRef Id="C_FixShortcuts"/>
+      <ComponentRef Id="C_IconFile"/>
+      <ComponentRef Id="C_Shortcuts"/>
+      <ComponentRef Id="C_DesktopShortcut"/>
+      <ComponentRef Id="C_Registry"/>
+      <ComponentRef Id="C_DataFolder"/>
+    </Feature>
+
+    <!-- Stop a running server before files are replaced or removed, and
+         clear the sign-in entry on uninstall (not on upgrade). -->
+    <Property Id="CMDEXE" Value="cmd.exe"/>
+    <!-- The server records its process id; see dashcam-server.ps1. A window
+         title cannot be used - it is started hidden and untitled. This stays
+         synchronous: the server must be gone before its files are replaced. -->
+    <CustomAction Id="SetCmdExe" Property="StopServer"
+                  Value="[SystemFolder]cmd.exe" Execute="immediate"/>
+    <!-- The pid file is only removed on a clean exit, so a crash or a sign-out
+         leaves a stale pid behind - and Windows recycles pids. Confirm the
+         process is actually a powershell.exe before killing it, or an upgrade
+         could terminate whatever unrelated program now holds that number. -->
+    <CustomAction Id="StopServer" Property="StopServer"
+                  ExeCommand="/c (for /f &quot;usebackq&quot; %i in (&quot;%LOCALAPPDATA%\DashcamPlayer\server.pid&quot;) do @(tasklist /fi &quot;PID eq %i&quot; /nh 2&gt;nul | findstr /i &quot;powershell.exe pwsh.exe&quot; &gt;nul &amp;&amp; taskkill /f /pid %i)) &gt;nul 2&gt;&amp;1 &amp; del /q &quot;%LOCALAPPDATA%\DashcamPlayer\server.pid&quot; &gt;nul 2&gt;&amp;1 &amp; exit /b 0"
+                  Execute="immediate" Return="ignore" Impersonate="yes"/>
+    <CustomAction Id="SetClearRun" Property="ClearRunKey"
+                  Value="[SystemFolder]cmd.exe" Execute="immediate"/>
+    <CustomAction Id="ClearRunKey" Property="ClearRunKey"
+                  ExeCommand="/c reg delete &quot;HKCU\Software\Microsoft\Windows\CurrentVersion\Run&quot; /v DashcamPlayerServer /f &gt;nul 2&gt;&amp;1 &amp; exit /b 0"
+                  Execute="immediate" Return="ignore" Impersonate="yes"/>
+
+    <!-- asyncNoWait, not ignore: "ignore" still makes the installer WAIT for
+         the process and only discard its exit code. This one walks the
+         Desktop and taskbar folders, which can block on OneDrive-backed
+         files, and a blocked install shows "Please wait while Windows
+         configures Dashcam Player" forever. Nothing later in the install
+         depends on its result, so it is fired and forgotten. -->
+    <CustomAction Id="SetFixIcons" Property="FixIcons"
+                  Value="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe" Execute="immediate"/>
+    <CustomAction Id="FixIcons" Property="FixIcons"
+                  ExeCommand="-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Fix-Shortcuts.ps1&quot;"
+                  Execute="immediate" Return="asyncNoWait" Impersonate="yes"/>
+
+    <!-- ffmpeg, if it is not already here. The export tools are the only part
+         of this that needs it, and installing it by hand is the one chore the
+         app otherwise asks of people.
+
+         Fired after InstallFinalize, so the script it runs is already on
+         disk, and asyncNoWait: winget takes a minute or two over it, and the
+         installer must neither sit there with a progress bar and no
+         explanation nor roll the whole install back because a download
+         failed. Impersonated, because the package is a per-user zip that
+         winget unpacks into this user's own AppData - nothing here needs
+         administrator rights.
+
+         The script checks for ffmpeg first and exits at once if it is there,
+         so this costs nothing on an upgrade. It reports through the same
+         status file the player reads, so opening the player while it runs
+         shows "Installing ffmpeg" rather than silence. -->
+    <CustomAction Id="SetGetFfmpeg" Property="GetFfmpeg"
+                  Value="[SystemFolder]WindowsPowerShell\v1.0\powershell.exe" Execute="immediate"/>
+    <CustomAction Id="GetFfmpeg" Property="GetFfmpeg"
+                  ExeCommand="-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File &quot;[INSTALLDIR]Install-FFmpeg.ps1&quot;"
+                  Execute="immediate" Return="asyncNoWait" Impersonate="yes"/>
+
+    <InstallExecuteSequence>
+      <!-- RemoveExistingProducts MUST come after InstallInitialize (1500).
+           It runs a nested uninstall of the previous version, and that has
+           to happen inside the install transaction. Sequenced before
+           InstallInitialize it can deadlock against the outer install on
+           the Windows Installer mutex, which shows as "Please wait while
+           Windows configures Dashcam Player" with nothing using any CPU.
+
+           The server is stopped first, so the old version's files are not
+           deleted out from under a running process. -->
+      <Custom Action="SetCmdExe" Sequence="1501"/>
+      <Custom Action="StopServer" Sequence="1502"/>
+      <!-- REMOVE~="ALL" means a true uninstall, not the nested uninstall that
+           RemoveExistingProducts performs during an upgrade. Without this
+           condition these ran on EVERY install, so anyone who had opted into
+           starting with Windows lost that setting silently on each update -
+           which is what the comment above always claimed was happening. -->
+      <Custom Action="SetClearRun" Sequence="1503">REMOVE~="ALL"</Custom>
+      <Custom Action="ClearRunKey" Sequence="1504">REMOVE~="ALL"</Custom>
+      <RemoveExistingProducts Sequence="1510"/>
+      <Custom Action="SetFixIcons" Sequence="6700">NOT REMOVE</Custom>
+      <Custom Action="FixIcons" Sequence="6701">NOT REMOVE</Custom>
+      <Custom Action="SetGetFfmpeg" Sequence="6702">NOT REMOVE</Custom>
+      <Custom Action="GetFfmpeg" Sequence="6703">NOT REMOVE</Custom>
+    </InstallExecuteSequence>
+
+  </Product>
+</Wix>
