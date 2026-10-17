@@ -7,7 +7,7 @@ fisheye, and exports any one camera as its own file.
 Everything runs on your own machine. Nothing is uploaded, and the player has
 no network access beyond the local helper that serves it.
 
-![version](https://img.shields.io/badge/version-1.60.0-blue)
+![version](https://img.shields.io/badge/version-1.60.1-blue)
 
 ## What it does
 
@@ -22,10 +22,44 @@ no network access beyond the local helper that serves it.
 - Writes any single camera out as its own file with ffmpeg, whole or a marked clip, with draggable in and out points
 - Deletes recordings from the card, a file or a whole day at a time
 
+## Before you start
+
+To view **dashcam** video you will need one of the dashcam apps installed on the
+car's head unit — for example
+[zeekr-shortcut-car](https://github.com/dts88/zeekr-shortcut-car/releases/latest).
+The car app install process is shown in [this video](https://youtu.be/ve_rzkdrjZI).
+
+If you only want to view **sentry** videos on your PC, you can skip the car app
+install.
+
+If you want both dashcam and sentry videos on the same USB drive — recommended —
+make sure the drive is in the **sentry USB-A port** in the car.
+
 ## Installing
 
-Download the `.msi` from the latest release and run it. It installs per-user
-into `%LOCALAPPDATA%\Programs\DashcamPlayer` and needs no administrator rights.
+Once there are recordings on the USB drive, install the viewer on your Windows PC.
+
+1. Go to the [latest release](https://github.com/daniellmnz/dashcam-player/releases)
+   and download the file ending in `.msi`.
+2. Double-click the downloaded file to install it. If Windows warns you about an
+   unknown publisher, choose **More info** → **Run anyway**.
+3. It installs per-user into `%LOCALAPPDATA%\Programs\DashcamPlayer`, needs no
+   administrator rights, and takes only a few seconds.
+4. **Do this once, before anything else:** open **Dashcam Player tools** — a
+   shortcut the installer puts on your desktop — and double-click **Install as
+   Edge app**. Edge opens at `http://localhost:8777/`; install the page as an app
+   from the **App available** button at the right-hand end of the address bar.
+   This step is what makes the folder permission stick: Edge only makes folder
+   permissions permanent for installed apps. Without it you re-authorise the
+   recording folder every session, and the single-camera export button never
+   appears at all, because a plain browser page cannot start a program.
+5. Run **Dashcam Player**, from the Start menu or the desktop shortcut.
+6. Plug the car's USB drive into your PC and choose that drive in Dashcam Player.
+   When it asks for permission to the folder, pick **Allow on every visit** so it
+   reopens by itself next time. Your dashcam and sentry recordings should now be
+   listed.
+
+### ffmpeg
 
 ffmpeg must be on your `PATH` for the export tools; everything else works
 without it. The installer fetches it with winget when it is missing — after
@@ -97,7 +131,7 @@ npm install --prefix tests
 tests/run-tests.sh
 ```
 
-Seventy-five checks covering the page, the helper, the launcher and the
+Seventy-six checks covering the page, the helper, the launcher and the
 installer. Several need PowerShell, ffmpeg or a Chromium build and skip
 themselves if those are absent; the rest run anywhere.
 

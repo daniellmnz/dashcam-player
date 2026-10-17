@@ -1,6 +1,6 @@
 # Dashcam Player
 
-**Version 1.60.0 · 16 October 2026**
+**Version 1.60.1 · 18 October 2026**
 
 Plays 7X Dashcam recordings, splits the combined frame back into its separate
 camera views, and generates the ffmpeg commands to export them.
@@ -48,7 +48,8 @@ player in its own window. Close the window and the server stops on its own.
 ## One thing worth doing once
 
 Run **Install as Edge app** from the Start-menu folder. Edge opens a normal
-window; use the three-dot menu → Apps → Install this site as an app.
+window; click the **App available** button at the right-hand end of the address
+bar, then **Install**.
 
 This matters for one reason: Edge only makes folder permissions permanent for
 *installed* apps. Once installed, choose your recording folder and pick

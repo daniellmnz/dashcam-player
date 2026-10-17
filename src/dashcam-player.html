@@ -36,7 +36,7 @@
      the script, so serving the page does not alter the bytes covered. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src 'sha256-PijbbgefnCF/AtSMISeBdw/+MML9/lzqCi5b0e9unW0=';
+  script-src 'sha256-NIGsyDruBV3qd1PycXD1o4UsUIFIy5KQojP+va3biOI=';
   style-src 'unsafe-inline';
   img-src 'self' data: blob:;
   media-src 'self' blob:;
@@ -490,7 +490,7 @@ code.cmd{display:block;background:var(--sunken);border:1px solid var(--line-soft
   <aside class="rail">
     <div class="brand">
       <h1>Zeekr 7X Sentry &amp; Dashcam Player</h1>
-      <p class="ver">v1.60.0</p>
+      <p class="ver">v1.60.1</p>
     </div>
     <div class="pickers">
       <button class="btn btn-primary" id="reopen" hidden title="Open the folder you were last using again"></button>
@@ -966,7 +966,7 @@ const DCP_TOKEN=(function(){
 // the code it started with, while this file is re-read from disk every time.
 // A mismatch is not cosmetic - an older helper silently drops parameters this
 // page sends, and the failure surfaces as if a recording were missing.
-const DCP_VERSION="1.60.0";
+const DCP_VERSION="1.60.1";
 // Three states, not two. The placeholder surviving does NOT mean "no helper":
 // a helper older than this handshake does not know the placeholder either, so
 // it serves the page with it untouched. Reading that as "no helper" made this
