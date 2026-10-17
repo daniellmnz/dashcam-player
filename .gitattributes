@@ -1,0 +1,38 @@
+# Line endings are not a matter of taste in this repository.
+#
+# Git on Windows is usually installed with core.autocrlf=true, which rewrites
+# CRLF to LF on the way into a commit and back again on checkout. For most
+# files that is invisible and harmless. For the batch files it is neither:
+# cmd.exe reads a .bat by byte offset and seeks back and forth through it to
+# find labels, and that bookkeeping assumes CRLF. With LF endings it mostly
+# works - the worst possible failure, because it keeps working until a label
+# moves, and then one GOTO lands somewhere that is not a label and the run
+# stops with "The system cannot find the batch label specified".
+#
+# tests/bomcheck.sh catches that in a working tree. This file is what stops it
+# being introduced in the first place, by whoever next commits from a machine
+# whose git is set up to convert.
+
+# Everything normalises to LF in the repository, whatever the contributor's
+# own setting, so that nobody's autocrlf decides the matter.
+* text=auto
+
+# Except these. -text means "never convert, in either direction": the blobs
+# are stored with CRLF already and every checkout, export and source download
+# gets them back byte for byte. Normalising to LF and converting on checkout
+# would also work for a clone, but not for someone who downloads the source
+# as a zip from GitHub and runs the tools out of it.
+*.bat   -text
+*.cmd   -text
+
+# And the reverse case: a shell script with CRLF endings fails on Linux with
+# a bad-interpreter error, because the carriage return is read as part of the
+# command name.
+*.sh    text eol=lf
+
+# Binaries, so git never inspects or rewrites them.
+*.msi   binary
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.mp4   binary
