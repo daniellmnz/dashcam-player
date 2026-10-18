@@ -41,7 +41,7 @@ const dom = new JSDOM(PAGE.replace('__DCP_TOKEN__', 'x'.repeat(64)).replace('__D
             state === 'missing'
               ? { state: 'missing', dir: '', lookedIn: ['C:\\'], asked: 'root=Dashcam dir=' }
               : state === 'found'
-                ? { state: 'found', dir: 'C:\\Users\\micha\\Dashcam' }
+                ? { state: 'found', dir: 'C:\\Users\\you\\Dashcam' }
                 : { state: 'looking' }),
         });
       }
