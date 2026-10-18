@@ -148,6 +148,11 @@ option lists are read out of the real scripts, so a test cannot quietly drift
 from the code it checks. Where a layout question is being asked, the answer is
 measured in a browser rather than reasoned about.
 
+## Credits
+
+Written by [daniellmnz](https://github.com/daniellmnz) with [Claude](https://claude.ai),
+Anthropic's AI assistant, which co-authored the code, the tests and this document.
+
 ## Licence
 
 GNU General Public License v3.0 — see [LICENSE](LICENSE).
