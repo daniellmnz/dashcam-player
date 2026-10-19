@@ -1,6 +1,6 @@
 # Dashcam Player
 
-**Version 1.60.2 · 19 October 2026**
+**Version 1.61.0 · 20 October 2026**
 
 Plays 7X Dashcam recordings, splits the combined frame back into its separate
 camera views, and generates the ffmpeg commands to export them.
@@ -156,6 +156,19 @@ cutting a bonnet reflection or an expanse of sky.
 **Lens** corrects the fisheye curvature on the GPU. Raise it until straight
 lines look straight; around 20–35% suits most surround cameras. Correcting
 always crops, so **zoom** below 1.0 to pull more of the frame back into view.
+
+**Fisheye**, in the view row beside the camera buttons, leaves the grid and
+single-camera views curved exactly as the lens recorded them. Straightening
+pushes the far edges of what the camera saw out of frame, so this is the way
+back to the whole of it — and to how the recording would look to anyone else.
+
+It takes out the straightening and nothing else. **Zoom** goes on working, so
+a curved picture can still be framed, and the strength you had is waiting
+when you untick it — the box overrides that setting rather than resetting it.
+While it is ticked the strength slider is dimmed, because it cannot change
+anything, and reads *kept as recorded*; the zoom beside it stays live. The
+whole frame is shown as recorded either way, so the tick makes no difference
+there.
 
 ### Export quality
 

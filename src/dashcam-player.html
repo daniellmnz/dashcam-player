@@ -36,7 +36,7 @@
      the script, so serving the page does not alter the bytes covered. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src 'sha256-j3yk6GSRkwRMVyXDJoYvNjgA4HlRUkDmhN8XNceM96s=';
+  script-src 'sha256-YSLqk/xVoa5VyjPRiW6b5EmcWIKgMgLSzh9bJM1536E=';
   style-src 'unsafe-inline';
   img-src 'self' data: blob:;
   media-src 'self' blob:;
@@ -490,7 +490,7 @@ code.cmd{display:block;background:var(--sunken);border:1px solid var(--line-soft
   <aside class="rail">
     <div class="brand">
       <h1>Zeekr 7X Sentry &amp; Dashcam Player</h1>
-      <p class="ver">v1.60.2</p>
+      <p class="ver">v1.61.0</p>
     </div>
     <div class="pickers">
       <button class="btn btn-primary" id="reopen" hidden title="Open the folder you were last using again"></button>
@@ -816,6 +816,11 @@ const DEFAULTS=Object.freeze({
     showNames:true,
     sortAsc:false,       // newest first
     rectify:false,       // write the exported view straightened
+    // Leave the grid and single-camera views curved as the lens recorded
+    // them. A way of LOOKING at the recording, like trim, so it lives with
+    // the view settings rather than with the export ones - and off by
+    // default, because straightening is what the player is for.
+    keepFisheye:false,
     autoRebuild:true,
     // The top-level folders a recorder writes into. Two systems are in use
     // here and they do not agree on the name, so this is a setting rather
@@ -966,7 +971,7 @@ const DCP_TOKEN=(function(){
 // the code it started with, while this file is re-read from disk every time.
 // A mismatch is not cosmetic - an older helper silently drops parameters this
 // page sends, and the failure surfaces as if a recording were missing.
-const DCP_VERSION="1.60.2";
+const DCP_VERSION="1.61.0";
 // Three states, not two. The placeholder surviving does NOT mean "no helper":
 // a helper older than this handshake does not know the placeholder either, so
 // it serves the page with it untouched. Reading that as "no helper" made this
@@ -2597,7 +2602,17 @@ let lens=freshLens();
 try{ const v=JSON.parse(localStorage.getItem("lanePlayerLens")||"null");
   if(v&&isFinite(v.k)&&isFinite(v.zoom)) lens={k:+v.k,zoom:+v.zoom}; }catch{}
 function saveLens(){ try{ localStorage.setItem("lanePlayerLens",JSON.stringify(lens)); }catch{} }
-const lensOn=()=>lens.k>0.001||Math.abs(lens.zoom-1)>0.001;
+// The correction strength actually in force. Keeping the fisheye takes out
+// the STRAIGHTENING and nothing else: zoom still applies, because framing a
+// curved picture is as reasonable as framing a straightened one, and the
+// stored lens.k is left untouched so it is still there when the box is
+// unticked. Everything that needs the strength asks here rather than reading
+// lens.k, so the two can never drift apart.
+const lensKNow=()=>prefs.keepFisheye?0:lens.k;
+// The single gate the draw path consults. Still true with the fisheye kept
+// if there is a zoom to apply - otherwise zooming would quietly stop working
+// the moment the box was ticked.
+const lensOn=()=>lensKNow()>0.001||Math.abs(lens.zoom-1)>0.001;
 // A recording the fisheye tool has already straightened. Correcting it again
 // on the way to the screen bends a picture that is already flat, which is
 // what you saw when a rectified file was opened: the curve put back in by the
@@ -2671,7 +2686,7 @@ function glLane(l,want){
   }
   gl.useProgram(glProg);
   gl.uniform2f(glLoc.u0,u0[0],u0[1]); gl.uniform2f(glLoc.u1,u1[0],u1[1]);
-  gl.uniform1f(glLoc.k,lens.k); gl.uniform1f(glLoc.z,lens.zoom); gl.uniform1f(glLoc.asp,sw/sh);
+  gl.uniform1f(glLoc.k,lensKNow()); gl.uniform1f(glLoc.z,lens.zoom); gl.uniform1f(glLoc.asp,sw/sh);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   return glc;
 }
@@ -2935,6 +2950,29 @@ function buildLaneButtons(s){
       lab.append(cb,document.createTextNode(l.label)); tog.appendChild(lab);
     });
   }
+
+  // Keep the fisheye.
+  //
+  // It sits here, beside the view buttons, and not in the settings panel,
+  // because it changes what you are looking at this moment - and because the
+  // alternative was dragging the Lens slider to zero and then having to
+  // remember where it had been. Outside the "In grid" block on purpose: a
+  // recording with one camera still has a curve to keep.
+  //
+  // Nothing reaches this point for a straightened clip; that path returns
+  // early, with the row cleared. There is no fisheye left in such a file to
+  // keep, and offering the choice would say otherwise.
+  const fe=document.createElement("label");
+  fe.title="Leave the grid and single-camera views curved as the lens recorded them."
+    +" The whole frame is always shown as recorded.";
+  const fcb=document.createElement("input");
+  fcb.type="checkbox"; fcb.id="keepFisheye"; fcb.checked=!!prefs.keepFisheye;
+  fcb.title=fe.title;
+  fcb.onchange=()=>{
+    prefs.keepFisheye=fcb.checked; savePrefs();
+    sizeCanvas(); draw(); syncAdjust();
+  };
+  fe.append(fcb,document.createTextNode("Fisheye")); tog.appendChild(fe);
 }
 // keep: do not let a forced mode become the remembered one. Opening a
 // straightened clip puts the player in whole-frame whether you asked for it
@@ -2964,8 +3002,13 @@ function adjustState(){
   // The whole-frame size is the mirror image of the other three: it is the
   // one setting that applies ONLY to the whole frame, so it lights up exactly
   // where they go out.
-  return { trim:!whole, lens:!whole&&!isFlat(s), strip:!whole,
-           whole, any:!whole };
+  // Two separate answers for the lens group, because keeping the fisheye
+  // stops only the straightening. Zoom still frames the picture, so the
+  // group stays live and only the strength slider goes out - dimming the
+  // whole box would say that zoom had stopped working too, which it has not.
+  const flat=isFlat(s), fish=!!prefs.keepFisheye&&!whole&&!flat;
+  return { trim:!whole, lens:!whole&&!flat, lensK:!whole&&!flat&&!prefs.keepFisheye,
+           strip:!whole, whole, any:!whole, fisheye:fish };
 }
 function syncAdjust(){
   const a=adjustState(), sum=$("adjust")&&$("adjust").querySelector("summary");
@@ -2974,14 +3017,29 @@ function syncAdjust(){
     for(const id of ids){ const c=$(id); if(c) c.disabled=!ok; }
   };
   set("trimBox",a.trim,["trimTop","trimBottom"]);
-  set("lensBox",a.lens,["lensK","lensZoom"]);
+  // The box and zoom follow a.lens; the strength slider has its own rule, so
+  // that keeping the fisheye takes out the straightening without making the
+  // zoom beside it look spent as well.
+  set("lensBox",a.lens,["lensZoom"]);
+  const lk=$("lensK");
+  if(lk){ lk.disabled=!a.lensK;
+    const lab=lk.closest("label"); if(lab) lab.classList.toggle("spent",!a.lensK); }
   set("wholeBox",a.whole,["wholeScale"]);
   const sb=$("statusBar"); if(sb){ sb.disabled=!a.strip;
     const lab=sb.closest("label"); if(lab) lab.classList.toggle("spent",!a.strip); }
+  // Two different reasons the lens slider can be out of action, and saying
+  // the wrong one is worse than saying nothing: the whole frame cannot use
+  // trim or the strip either, whereas keeping the fisheye leaves both of
+  // those working and takes out only the straightening.
   const note=$("adjustNote");
   if(note){
-    note.hidden=a.any;
-    note.textContent="The whole frame is shown as recorded, so trim, lens and the status strip do not apply to it. Its size on screen does.";
+    if(!a.any){
+      note.hidden=false;
+      note.textContent="The whole frame is shown as recorded, so trim, lens and the status strip do not apply to it. Its size on screen does.";
+    }else if(a.fisheye){
+      note.hidden=false;
+      note.textContent="Fisheye is ticked in the view row, so the curve is left as the lens recorded it. Zoom still applies; untick Fisheye to straighten.";
+    }else note.hidden=true;
   }
   // The BUTTON is left alone. It used to dim along with the three settings
   // inside it that the whole frame cannot use, which said the wrong thing:
@@ -3602,9 +3660,13 @@ function lensLabel(){
   // a control that silently does nothing reads as a fault. It says why, and
   // the box is disabled so it cannot be dragged in hope.
   const flat=isFlat(segments[current]), whole=mode.kind==="all";
+  // With the fisheye kept the stored strength is still whatever it was, so
+  // showing it would claim a correction that is not being applied. It says
+  // which of the three reasons is in force instead.
   $("lensKVal").textContent=whole?"not on the whole frame"
     :(flat?"already straightened"
-    :(lens.k>0.001?Math.round(lens.k/1.2*100)+"%":"off"));
+    :(prefs.keepFisheye?"kept as recorded"
+    :(lens.k>0.001?Math.round(lens.k/1.2*100)+"%":"off")));
 }
 (function wireLens(){
   const kEl=$("lensK"), zEl=$("lensZoom");

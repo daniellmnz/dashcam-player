@@ -7,12 +7,13 @@ fisheye, and exports any one camera as its own file.
 Everything runs on your own machine. Nothing is uploaded, and the player has
 no network access beyond the local helper that serves it.
 
-![version](https://img.shields.io/badge/version-1.60.2-blue)
+![version](https://img.shields.io/badge/version-1.61.0-blue)
 
 ## What it does
 
 - Plays the combined 2×2 recordings as a grid, or any single camera full-frame
-- Straightens the fisheye on the GPU, with adjustable strength and zoom
+- Straightens the fisheye on the GPU, with adjustable strength and zoom, or
+  leaves it curved as recorded at one tick in the view row
 - Trims the sky and the car's own bodywork off each view
 - Lists recordings by day, with sentry alerts grouped separately and marked
 - Opens a sentry alert at the moment it triggered, with the still, the time and
@@ -131,7 +132,7 @@ npm install --prefix tests
 tests/run-tests.sh
 ```
 
-Seventy-seven checks covering the page, the helper, the launcher and the
+Seventy-eight checks covering the page, the helper, the launcher and the
 installer. Several need PowerShell, ffmpeg or a Chromium build and skip
 themselves if those are absent; the rest run anywhere.
 

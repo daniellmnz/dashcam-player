@@ -3,7 +3,7 @@
      the Upgrade table's Maximum had to be bumped in step with Version by
      hand: bump one and not the other and the installer silently stops
      detecting its own predecessor, leaving two copies installed. -->
-<?define Ver = "1.60.2" ?>
+<?define Ver = "1.61.0" ?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- The ProductCode MUST change with every version, or Windows sees the
        same product already installed and refuses outright with "Another
@@ -16,10 +16,10 @@
 
          python3 -c "import uuid; print(uuid.uuid5(
            uuid.UUID('{1BECB43F-BFF1-5373-850A-AE207AA893FE}'),
-           'Product-1.60.2'))"
+           'Product-1.61.0'))"
 
        Bump Ver above and this GUID together. -->
-  <Product Id="{EA056FAF-5E44-52EC-A771-AC4668916F5B}"
+  <Product Id="{7647436E-CEBB-57F8-9325-A326C9474E6B}"
            Name="Dashcam Player"
            Language="1033"
            Version="$(var.Ver)"
