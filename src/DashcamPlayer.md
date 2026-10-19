@@ -1,6 +1,6 @@
 # Dashcam Player
 
-**Version 1.60.1 · 18 October 2026**
+**Version 1.60.2 · 19 October 2026**
 
 Plays 7X Dashcam recordings, splits the combined frame back into its separate
 camera views, and generates the ffmpeg commands to export them.

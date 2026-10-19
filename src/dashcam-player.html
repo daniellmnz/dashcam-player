@@ -36,7 +36,7 @@
      the script, so serving the page does not alter the bytes covered. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src 'sha256-NIGsyDruBV3qd1PycXD1o4UsUIFIy5KQojP+va3biOI=';
+  script-src 'sha256-j3yk6GSRkwRMVyXDJoYvNjgA4HlRUkDmhN8XNceM96s=';
   style-src 'unsafe-inline';
   img-src 'self' data: blob:;
   media-src 'self' blob:;
@@ -490,7 +490,7 @@ code.cmd{display:block;background:var(--sunken);border:1px solid var(--line-soft
   <aside class="rail">
     <div class="brand">
       <h1>Zeekr 7X Sentry &amp; Dashcam Player</h1>
-      <p class="ver">v1.60.1</p>
+      <p class="ver">v1.60.2</p>
     </div>
     <div class="pickers">
       <button class="btn btn-primary" id="reopen" hidden title="Open the folder you were last using again"></button>
@@ -966,7 +966,7 @@ const DCP_TOKEN=(function(){
 // the code it started with, while this file is re-read from disk every time.
 // A mismatch is not cosmetic - an older helper silently drops parameters this
 // page sends, and the failure surfaces as if a recording were missing.
-const DCP_VERSION="1.60.1";
+const DCP_VERSION="1.60.2";
 // Three states, not two. The placeholder surviving does NOT mean "no helper":
 // a helper older than this handshake does not know the placeholder either, so
 // it serves the page with it untouched. Reading that as "no helper" made this
@@ -1654,7 +1654,8 @@ async function openHandle(dir){
     markFolder(dir);                     // not awaited: nothing here needs it
     await ingest(files);
     setHint($("pickHint").textContent+" \u2014 "+dir.name);
-  }catch(e){ setHint("Could not read that folder: "+e.message); showReopen(dir.name,false); }
+    return true;
+  }catch(e){ setHint("Could not read that folder: "+e.message); showReopen(dir.name,false); return false; }
 }
 // Leave a mark in the folder, so the helper can be certain which one it is.
 //
@@ -2420,7 +2421,28 @@ async function deleteSelected(){
   let p=await dirHandle.queryPermission({mode:"readwrite"});
   if(p!=="granted") p=await dirHandle.requestPermission({mode:"readwrite"});
   if(p!=="granted"){ setHint("Permission to change that folder was not given."); return; }
-  let gone=0; const failed=[], leftovers=[];
+  // Let go of the recording on screen before deleting it.
+  //
+  // This is Windows, not the page. Chromium opens the file with share-delete,
+  // so removeEntry SUCCEEDS - but Windows keeps the directory entry alive
+  // until the last handle on the file closes, and the video element holds one
+  // through its blob URL. Delete the file being watched without letting go
+  // first and the entry lingers: the rescan immediately afterwards still sees
+  // it, puts the row back - ticked, because the DOM is rebuilt from a list
+  // that still has it - and the entry only goes when the handle is dropped.
+  // The next attempt then meets a file that is no longer there and reports
+  // "could not be removed", for ever.
+  //
+  // Deleting a recording you are NOT watching closes no handle and never had
+  // the problem, which is exactly why this looked intermittent.
+  if(current>=0&&items.indexOf(segments[current])>=0){
+    try{ video.pause(); }catch{}
+    video.removeAttribute("src");
+    try{ video.load(); }catch{}   // drops the decoder's own reference too
+    if(objUrl){ try{ URL.revokeObjectURL(objUrl); }catch{} objUrl=null; }
+    current=-1;
+  }
+  let gone=0; const failed=[], leftovers=[], removed=[];
   for(const x of items){
     const rel=x.file.relPath||"";
     const d=rel.lastIndexOf("/")>0?rel.slice(0,rel.lastIndexOf("/")+1):"";
@@ -2432,7 +2454,7 @@ async function deleteSelected(){
       const h=dirHandles[d];
       if(!h) throw new Error('the folder "'+(d||"(root)")+'" is no longer open - reopen the folder and try again');
       await h.removeEntry(x.name);
-      gone++;
+      gone++; removed.push(x);
       // The sidecar goes with it, and a failure here is NOT nothing.
       //
       // This was one silent try/catch, and the result was the bug it took a
@@ -2460,15 +2482,42 @@ async function deleteSelected(){
         }
       }
       if(x.sentry&&d) await removeAlertFolder(h,d);
-    }catch(e){ failed.push(x.name+" \u2014 "+(e&&e.message?e.message:e)); }
+    }catch(e){
+      const nm=(e&&e.name)?e.name:"", msg=(e&&e.message)?e.message:String(e);
+      // A file that is not there is the outcome that was asked for, not a
+      // failure. Counting it as one meant that once a delete had half
+      // succeeded - see the note above - every retry reported failure for
+      // ever, while the card kept getting emptier.
+      if(/NotFound/i.test(nm)||/could not be found|no such file/i.test(msg)){
+        gone++; removed.push(x);
+      } else failed.push(x.name+" \u2014 "+msg);
+    }
   }
   picked.clear();
+  // Correct the list from what actually happened, rather than leaving it to
+  // the rescan alone. The rescan can fail, and on Windows it can still see a
+  // file whose directory entry has not caught up - either way a recording
+  // that has gone would come straight back into the list.
+  if(removed.length){
+    const dead=new Set(removed.map(x=>segKey(x)));
+    for(let i=segments.length-1;i>=0;i--)
+      if(dead.has(segKey(segments[i]))) segments.splice(i,1);
+    current=-1;
+    try{ renderList(); }catch{}
+  }
   keepCollapsed=true;
-  try{ await openHandle(dirHandle); }catch{ keepCollapsed=false; }
+  // openHandle reports a folder it could not re-read by returning false and
+  // saying so - and this line used to overwrite that message with the delete
+  // summary, so a rescan that failed looked exactly like one that worked.
+  let rescanFailed=false;
+  try{ rescanFailed=(await openHandle(dirHandle))===false; }
+  catch{ keepCollapsed=false; rescanFailed=true; }
   setHint(gone+" file"+(gone===1?"":"s")+" deleted"
     +(failed.length?", "+failed.length+" could not be removed":"")
     +(leftovers.length?", "+leftovers.length+" data file"+(leftovers.length===1?"":"s")
-       +" left behind - those recordings are still listed, with no video":"")+".");
+       +" left behind - those recordings are still listed, with no video":"")+"."
+    +(rescanFailed?" The folder could not be re-read, so the list may be out of"
+       +" date - use Reopen to refresh it.":""));
   if(failed.length) console.warn("Could not delete:\n"+failed.join("\n"));
   if(leftovers.length) console.warn("Data files left behind:\n"+leftovers.join("\n"));
 }

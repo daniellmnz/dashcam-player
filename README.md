@@ -7,7 +7,7 @@ fisheye, and exports any one camera as its own file.
 Everything runs on your own machine. Nothing is uploaded, and the player has
 no network access beyond the local helper that serves it.
 
-![version](https://img.shields.io/badge/version-1.60.1-blue)
+![version](https://img.shields.io/badge/version-1.60.2-blue)
 
 ## What it does
 
@@ -131,7 +131,7 @@ npm install --prefix tests
 tests/run-tests.sh
 ```
 
-Seventy-six checks covering the page, the helper, the launcher and the
+Seventy-seven checks covering the page, the helper, the launcher and the
 installer. Several need PowerShell, ffmpeg or a Chromium build and skip
 themselves if those are absent; the rest run anywhere.
 
@@ -147,11 +147,6 @@ They test the **shipped files**, not copies — patterns, filter graphs and
 option lists are read out of the real scripts, so a test cannot quietly drift
 from the code it checks. Where a layout question is being asked, the answer is
 measured in a browser rather than reasoned about.
-
-## Credits
-
-Written by [daniellmnz](https://github.com/daniellmnz) with [Claude](https://claude.ai),
-Anthropic's AI assistant, which co-authored the code, the tests and this document.
 
 ## Licence
 

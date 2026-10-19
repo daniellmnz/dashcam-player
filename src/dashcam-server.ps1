@@ -25,7 +25,7 @@ param([int]$Port = 8777, [int]$IdleSeconds = 180, [switch]$Persist)
 # older than the page it is serving. It tells the page its version and the
 # page says so plainly; otherwise an old helper silently drops parameters a
 # new page sends and the failure looks like a missing recording.
-$ServerVersion = '1.60.1'
+$ServerVersion = '1.60.2'
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $page = Join-Path $root 'dashcam-player.html'
